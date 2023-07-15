@@ -41,6 +41,7 @@ M = 16  # 阵元数为M
 P = 3  # 信号数目
 c = 3e8  # 光速
 d = 0.5 * c / f0  # 阵间距
+pi = math.pi
 
 # ---------------------信号时间和信号点数
 T = 5e-07  #信号持续时间5e-7s  0.5us
@@ -111,21 +112,19 @@ def LFM_source(theta, snr):  #两个宽带信号频率是一样的
     return x
 
 def Mychirp(theta, snr):  #两个宽带信号频率是一样的
-    P = db2power(snr)
     x = np.zeros((M,len(t)),dtype=complex)
     for m in range(M):
         tau = m * d * sind(theta)/ c
-        phase = 2 * np.pi * fl * t + pi * K* t**2
-        x[m, :] = P * chirp(t + tau, fl, T, fl + B, method='linear', phi=0) + 1j * P * chirp(t + tau, fl, T, fl + B, method='linear', phi=-90)
+        tyan = t+tau
+        x[m, :] = db2power(snr) * chirp(tyan, fl, tyan[-1], fl + B, method='linear', phi=0) + 1j * db2power(snr) * chirp(tyan, fl, tyan[-1] , fl + B, method='linear', phi=90)
     return x
 
 
 def arrayline(thetacom, fpin,sensor_error=0):  
-    return np.exp(-1j * 2 * pi * (d + sensor_error) * fpin * np.sin(thetacom * radians) * np.arange(M) / c)  #出来的只有一个维度
+    return np.exp(-1j * 2 * pi * (d + sensor_error) * fpin * sind(thetacom)* np.arange(M) / c)  #出来的只有一个维度
 
 
 def zhaidai(sensor_error, thetacom):
-    t = np.arange(Nr) / fs  # 窄带干扰专用
     s = np.sqrt(10 ** (snr[2] / 10)) * np.sin(2 * pi * f0 * t)
     s = s[np.newaxis,:]
     a = arrayline(thetacom, f0,sensor_error).conj()
@@ -136,13 +135,15 @@ def zhaidai(sensor_error, thetacom):
 
 
 def generate_signal(thetacom, sensor_error):
-    x = LFM_source(thetacom[0], snr[0])  # 期望信号
-    x_test = LFM_source_chirp(thetacom[0], snr[0])
-    x += LFM_source(thetacom[1], snr[1])  # 宽带干扰
-    u = zhaidai(sensor_error, thetacom[2])
-    x += u# 窄带干扰
-    # noise = 1 / np.sqrt(2) * np.random.randn(M, Nr) + 1j / \
-    #     np.sqrt(2) * np.random.randn(M, Nr)  # 加噪声
+    I1 = Mychirp(thetacom[0], snr[0])  # 期望信号
+    I2= Mychirp(thetacom[0], snr[0])
+    S = zhaidai(sensor_error, thetacom[2])
+    noise = 1 / np.sqrt(2) *( np.random.randn(M, Nr) + j* np.random.randn(M, Nr) )
+    x  =  I1+ I2+ S+ noise
+    return x
+
+
+噪声
     noise_data = loadmat('noise.mat')
     noise = noise_data['noise']
     x += noise
