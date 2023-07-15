@@ -123,7 +123,7 @@ def Mychirp(theta, snr):  #两个宽带信号频率是一样的
 
 
 def arrayline(thetacom, fpin,sensor_error=0):  
-    return np.exp(-1j * 2 * pi *  relay(d+sensor_error,thetacom) * fpin * np.arange(M) )  #出来的只有一个维度  
+    return np.exp(-j * 2 * pi *  relay(d+sensor_error,thetacom) * fpin * np.arange(M) )  #出来的只有一个维度  
 
 
 def zhaidai(thetacom,sensor_error,):
