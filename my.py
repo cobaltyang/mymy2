@@ -23,7 +23,7 @@ def tpuconnect():
 # 参数定义
 
 def db2power(db):
-    power = 10 ** (db / 20)
+    power = 10 ** (db / 10)
     return power
 
 def sind(theta):
@@ -124,10 +124,10 @@ def arrayline(thetacom, fpin,sensor_error=0):
     return np.exp(-1j * 2 * pi * (d + sensor_error) * fpin * sind(thetacom)* np.arange(M) / c)  #出来的只有一个维度
 
 
-def zhaidai(sensor_error, thetacom):
-    s = np.sqrt(10 ** (snr[2] / 10)) * np.sin(2 * pi * f0 * t)
+def zhaidai(thetacom,sensor_error,):
+    s = db2power(thetacom) * np.sin(2 * pi * f0 * t)
     s = s[np.newaxis,:]
-    a = arrayline(thetacom, f0,sensor_error).conj()
+    a = arrayline(thetacom, f0,sensor_error)
     a = a[:, np.newaxis]
 
     signal = a @ s  # a*s
@@ -136,27 +136,12 @@ def zhaidai(sensor_error, thetacom):
 
 def generate_signal(thetacom, sensor_error):
     I1 = Mychirp(thetacom[0], snr[0])  # 期望信号
-    I2= Mychirp(thetacom[0], snr[0])
-    S = zhaidai(sensor_error, thetacom[2])
+    I2= Mychirp(thetacom[1], snr[0])
+    S = zhaidai(thetacom[2],sensor_error)
     noise = 1 / np.sqrt(2) *( np.random.randn(M, Nr) + j* np.random.randn(M, Nr) )
-    x  =  I1+ I2+ S+ noise
+    x  =  I1+ I2+ S + noise
     return x
 
-
-噪声
-    noise_data = loadmat('noise.mat')
-    noise = noise_data['noise']
-    x += noise
-    return x
-
-
-def plot_signal(signal):
-    plt.imshow(signal, aspect='auto', cmap='jet')
-    plt.colorbar()
-    plt.xlabel('Time')
-    plt.ylabel('Element')
-    plt.title('Signal')
-    plt.show()
 
 
 # 2.计算fft
@@ -279,7 +264,6 @@ def datasetgenerate(new_DOA):
     for mm in [0, 1]:  # range(len(new_DOA)): # 对于每个角度组合
         thetacom = new_DOA[:,:,mm]  # 每一个角度组合
         x = generate_signal(thetacom, sensor_error)  # 1.生成信号
-        plot_signal(x)
         X = calculate_fft(x)  # 2.傅里叶变换
         Rfl = xiefangcha(X, mm, kn)  # 3.计算子带协方差矩阵Rfl
 
