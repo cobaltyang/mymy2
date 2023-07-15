@@ -22,13 +22,17 @@ def tpuconnect():
     return tpu_strategy
 # 参数定义
 
+def db2power(db):
+    power = 10 ** (db / 20)
+    return power
+
 
 f0 = 8e9  # 信号中心频率8GHz
 fr = 8e9  # 干扰信号频率8GHz
 B = 5e8  # 信号带宽500MHz
 fl = f0 - B / 2  # 信号起始频率
 fh = f0 + B / 2  # 信号最高频率
-fs = 3 * f0  # 采样频率
+fs = 3 * f0  # 采样频率    #采样频率，一秒采24G个点
 # -------------------------固定常数
 pi = math.pi
 radians = pi / 180
@@ -38,8 +42,10 @@ c = 3e8  # 光速
 d = 0.5 * c / f0  # 阵间距
 
 # ---------------------信号时间和信号点数
-T = 5e-07
-Nr = round(T * fs)
+T = 5e-07  #信号持续时间5e-7s  0.5us
+Nr = T * fs   # 对0.5us信号采样得到的点的个数
+t = np.arange(0, Nr)/fs  # 时间轴刻度   非整数步长用linspace
+f = np.arange(0, fs)*fs/Nr  # 频率轴刻度
 J = 1200
 # ---------------------------------------------------角度和信噪比
 theta1 = np.arange(-15, 16, 1)  # 期望信号区域
@@ -52,16 +58,12 @@ np.random.seed(seed)
 
 
 
-def calculate_frequency_parameters():
-
-    t = np.arange(0, Nr) / fs  # 时间轴刻度
-    fw = np.linspace(0, fs, Nr)  # 频率轴刻度
-    m = int(f0 / fs)
+def calculate_frequency_parameters():  
     kn = np.nonzero(np.logical_and((fw >= f0 - m * fs - B / 2) , (fw <= f0 - m * fs + B / 2))
                  )[0] # fft后落在带宽内频率索引
     G = len(kn)  # 落在带宽内的频率的个数
     F = fw[kn]  # 落在带宽内的频率
-
+#完全没有问题
     return G, F, kn
 
 
@@ -95,7 +97,7 @@ new_DOA = generate_DOA_combinations()
 
 
 def LFM_source(theta, snr):  #两个宽带信号频率是一样的
-    t = np.arange(0, T, 1/fs)       # 时间变量
+
     P = 10**(snr/20)                # 信号功率
     K = B / T                       # 调频速率
     x = np.zeros((M,len(t)),dtype=complex)
