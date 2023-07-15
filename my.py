@@ -26,6 +26,8 @@ def db2power(db):
     power = 10 ** (db / 20)
     return power
 
+def sind(theta):
+    return np.sin(theta*math.pi/100) 
 
 f0 = 8e9  # 信号中心频率8GHz
 fr = 8e9  # 干扰信号频率8GHz
@@ -34,8 +36,7 @@ fl = f0 - B / 2  # 信号起始频率
 fh = f0 + B / 2  # 信号最高频率
 fs = 3 * f0  # 采样频率    #采样频率，一秒采24G个点
 # -------------------------固定常数
-pi = math.pi
-radians = pi / 180
+
 M = 16  # 阵元数为M
 P = 3  # 信号数目
 c = 3e8  # 光速
@@ -53,6 +54,7 @@ theta2 = np.arange(-60, -29, 1)  # 宽带干扰区域
 theta3 = np.arange(30, 61, 1)  # 窄带干扰区域
 snr = np.array([10, 30, 30])  # 信噪比
 sensor_error = 0.1 * (rand() - 0.5)  # 阵元位置误差
+K = B / T                       # 调频速率
 seed = 1234
 np.random.seed(seed)
 
@@ -108,15 +110,13 @@ def LFM_source(theta, snr):  #两个宽带信号频率是一样的
         x[vv,:] = P*np.exp(1j*(yanqian+yanhou))
     return x
 
-def LFM_source_chirp(theta, snr):  #两个宽带信号频率是一样的
-    t = np.arange(0, T, 1/fs)       # 时间变量
-    P = 10**(snr/20)                # 信号功率
-    K = B / T                       # 调频速率
+def Mychirp(theta, snr):  #两个宽带信号频率是一样的
+    P = db2power(snr)
     x = np.zeros((M,len(t)),dtype=complex)
     for m in range(M):
-        tau = m * d * np.sin(theta*radians) / c
-        phase = 2 * np.pi * fl * t + pi * B / T * t**2
-        x[m, :] = P * chirp(t - tau, fl, T, fl + B, method='linear', phi=0) + 1j * P * chirp(t - tau, fl, T, fl + B, method='linear', phi=-90)
+        tau = m * d * sind(theta)/ c
+        phase = 2 * np.pi * fl * t + pi * K* t**2
+        x[m, :] = P * chirp(t + tau, fl, T, fl + B, method='linear', phi=0) + 1j * P * chirp(t + tau, fl, T, fl + B, method='linear', phi=-90)
     return x
 
 
