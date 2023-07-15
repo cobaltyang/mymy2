@@ -29,6 +29,8 @@ def db2power(db):
 def sind(theta):
     return np.sin(theta*math.pi/100) 
 
+def relay(d, theta):
+    return d*sind(theta)/c
 f0 = 8e9  # 信号中心频率8GHz
 fr = 8e9  # 干扰信号频率8GHz
 B = 5e8  # 信号带宽500MHz
@@ -121,16 +123,13 @@ def Mychirp(theta, snr):  #两个宽带信号频率是一样的
 
 
 def arrayline(thetacom, fpin,sensor_error=0):  
-    return np.exp(-1j * 2 * pi * (d + sensor_error) * fpin * sind(thetacom)* np.arange(M) / c)  #出来的只有一个维度
+    return np.exp(-1j * 2 * pi *  relay(d+sensor_error,thetacom) * fpin * np.arange(M) )  #出来的只有一个维度  
 
 
 def zhaidai(thetacom,sensor_error,):
     s = db2power(thetacom) * np.sin(2 * pi * f0 * t)
-    s = s[np.newaxis,:]
     a = arrayline(thetacom, f0,sensor_error)
-    a = a[:, np.newaxis]
-
-    signal = a @ s  # a*s
+    signal = a.T @ s  
     return signal
 
 
